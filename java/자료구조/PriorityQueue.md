@@ -8,5 +8,8 @@ PriorityQueue는 Heap 자료구조 기반으로 되어 있습니다.
 
 ### Heap 삽입
 1. 가장 밑단의 노드에 삽입합니다.
+![20230414](https://user-images.githubusercontent.com/42162127/232048269-7d158d84-4af8-47b4-aaf8-cf079499744a.PNG)
 
+2. 부모노드와 비교해서 자식노드가 크다면 교환, 작다면 해당 부분에서 정지합니다.
+![20230414](https://user-images.githubusercontent.com/42162127/232048434-1daa9218-dfc0-4880-b55e-66b308358862.PNG)
 
