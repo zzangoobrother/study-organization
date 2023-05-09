@@ -1,0 +1,37 @@
+Bean 초기화 과정
+
+````java
+AbstractAutowireCapableBeanFactory.class
+
+protected Object initializeBean(String beanName, Object bean, @Nullable RootBeanDefinition mbd) {
+    ....
+    invokeAwareMethods(beanName, bean);
+    ....
+    applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
+    ....
+    invokeInitMethods(beanName, wrappedBean, mbd);
+    ....
+    applyBeanPostProcessorsAfterInitialization(wrappedBean, beanName);
+    ....
+}
+
+private void invokeAwareMethods(String beanName, Object bean) {
+	if (bean instanceof Aware) {
+		if (bean instanceof BeanNameAware) {
+			((BeanNameAware) bean).setBeanName(beanName);
+		}
+		if (bean instanceof BeanClassLoaderAware) {
+			ClassLoader bcl = getBeanClassLoader();
+			if (bcl != null) {
+				((BeanClassLoaderAware) bean).setBeanClassLoader(bcl);
+			}
+		}
+		if (bean instanceof BeanFactoryAware) {
+			((BeanFactoryAware) bean).setBeanFactory(AbstractAutowireCapableBeanFactory.this);
+		}
+	}
+}
+````
+BeanFactoryAware 타입의 Bean을 beanFactory에 주입한다.
+
+
