@@ -34,4 +34,60 @@ private void invokeAwareMethods(String beanName, Object bean) {
 ````
 BeanFactoryAware 타입의 Bean을 beanFactory에 주입한다.
 
+applyBeanPostProcessorsBeforeInitialization() 메서드를 보겠습니다.
+````java
+@Override
+public Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName)
+    	throws BeansException {
 
+    Object result = existingBean;
+    for (BeanPostProcessor processor : getBeanPostProcessors()) {
+    	Object current = processor.postProcessBeforeInitialization(result, beanName);
+    	if (current == null) {
+    		return result;
+    	}
+    	result = current;
+    }
+    return result;
+}
+````
+BeanPostProcessor 인터페이스의 postProcessBeforeInitialization() 메소드를 실행합니다.
+여러 구현체가 있지만 BeanFactoryAware와 차이를 보기 위해 
+ApplicationContextAwareProcessor 클래스를 보자
+
+````java
+ApplicationContextAwareProcessor.class
+
+@Override
+@Nullable
+public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+    ....
+    invokeAwareInterfaces(bean);
+    return bean;
+}
+
+private void invokeAwareInterfaces(Object bean) {
+    if (bean instanceof EnvironmentAware) {
+    	((EnvironmentAware) bean).setEnvironment(this.applicationContext.getEnvironment());
+    }
+    if (bean instanceof EmbeddedValueResolverAware) {
+    	((EmbeddedValueResolverAware) bean).setEmbeddedValueResolver(this.embeddedValueResolver);
+    }
+    if (bean instanceof ResourceLoaderAware) {
+    	((ResourceLoaderAware) bean).setResourceLoader(this.applicationContext);
+    }
+    if (bean instanceof ApplicationEventPublisherAware) {
+    	((ApplicationEventPublisherAware) bean).setApplicationEventPublisher(this.applicationContext);
+    }
+    if (bean instanceof MessageSourceAware) {
+    	((MessageSourceAware) bean).setMessageSource(this.applicationContext);
+    }
+    if (bean instanceof ApplicationStartupAware) {
+    	((ApplicationStartupAware) bean).setApplicationStartup(this.applicationContext.getApplicationStartup());
+    }
+    if (bean instanceof ApplicationContextAware) {
+    	((ApplicationContextAware) bean).setApplicationContext(this.applicationContext);
+    }
+}
+````
+ApplicationContextAware 를 구현한 bean에 ApplicationContext를 주입한다.
