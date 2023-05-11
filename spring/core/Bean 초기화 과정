@@ -91,3 +91,69 @@ private void invokeAwareInterfaces(Object bean) {
 }
 ````
 ApplicationContextAware 를 구현한 bean에 ApplicationContext를 주입한다.
+
+````java
+protected void invokeInitMethods(String beanName, Object bean, @Nullable RootBeanDefinition mbd)
+    throws Throwable {
+    boolean isInitializingBean = (bean instanceof InitializingBean);
+    if (isInitializingBean && (mbd == null || !mbd.hasAnyExternallyManagedInitMethod("afterPropertiesSet"))) {
+        ....
+	((InitializingBean) bean).afterPropertiesSet();
+    }
+    ....
+    invokeCustomInitMethod(beanName, bean, mbd);
+}
+````
+InitializingBean 타입의 Bean을 afterPropertiesSet() 메소드를 호출한다.
+invokeCustomInitMethod() 메소드는 내부 소스를 보면
+````java
+protected void invokeCustomInitMethod(String beanName, Object bean, RootBeanDefinition mbd)
+    throws Throwable {
+    ....
+    Method methodToInvoke = ClassUtils.getInterfaceMethodIfPossible(initMethod, bean.getClass());
+    ....
+}
+
+@Bean(initMethod = "init")
+````
+initMethod 이 보일 것이다. 
+
+````java
+@Override
+public Object applyBeanPostProcessorsAfterInitialization(Object existingBean, String beanName)
+    	throws BeansException {
+
+    Object result = existingBean;
+    for (BeanPostProcessor. processor : getBeanPostProcessors()) {
+    	Object current = processor.postProcessAfterInitialization(result, beanName);
+    	if (current == null) {
+    		return result;
+    	}
+    	result = current;
+    }
+    return result;
+}
+````
+BeanPostProcessor.postProcessAfterInitialization() 를 실행합니다.
+
+````java
+ApplicationListenerDetector.class
+
+@Override
+public Object postProcessAfterInitialization(Object bean, String beanName) {
+    if (bean instanceof ApplicationListener) {
+        // potentially not detected as a listener by getBeanNamesForType retrieval
+	Boolean flag = this.singletonNames.get(beanName);
+	if (Boolean.TRUE.equals(flag)) {
+	    // singleton bean (top-level or inner): register on the fly
+	    this.applicationContext.addApplicationListener((ApplicationListener<?>) bean);
+	}
+	....
+    }
+    return bean;
+}
+````
+BeanPostProcessor 인터페이스를 구현한 ApplicationListenerDetector 클래스이다.
+singleton 이면 applicationContext에 Listener로 등록을 한다.
+
+
