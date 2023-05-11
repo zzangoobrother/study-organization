@@ -156,4 +156,19 @@ public Object postProcessAfterInitialization(Object bean, String beanName) {
 BeanPostProcessor 인터페이스를 구현한 ApplicationListenerDetector 클래스이다.
 singleton 이면 applicationContext에 Listener로 등록을 한다.
 
+정리
+1. invokeAwareInterfaces()
+- BeanNameAware
+- BeanClassLoaderAware
+- BeanFactoryAware
+주입
 
+2. applyBeanPostProcessorsBeforeInitialization()
+여러 BeanPostProcessor 타입 존재
+
+3. invokeInitMethods()
+- InitializingBean.afterPropertiesSet()
+- @Bean(initMethod = "init")
+
+4. applyBeanPostProcessorsAfterInitialization()
+여러 BeanPostProcessor 타입 존재
