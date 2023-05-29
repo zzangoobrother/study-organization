@@ -57,3 +57,25 @@ $ FLUSH PRIVILEGES;
 ````
 mysql의 USER 테이블을 확인하여 생성한 계정이 있는지 확인 합니다.
 
+DB에서 book 사용자를 생성합니다.
+````bash
+$ CREATE DATABSE book;
+````
+book에서 testtable 테이블을 만들고 test row 라는 데이터를 넣습니다.
+````bash
+$ use book;
+$ create table testtable { text varchar(20) };
+$ insert into testtable values ('test row');
+$ select * from testtable;
+````
+
+Master DB에서 dump를 합니다.
+````bash
+$ mysqldump -u root -p bookclub > dump.sql
+````
+
+mysql 접속을 종료하고, 로컬 환경에서 dump.sql를 가져옵니다.
+````bash
+$ docker cp mysql-master:dump.sql .
+$ cat dump.sql
+````
