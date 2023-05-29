@@ -47,4 +47,13 @@ $ docker exec -it mysql-master /bin/bash
 $ mysql -u root -p 
 mysql> SHOW MASTER STATUS\G
 ````
+## Master DB 계정 생성
+Master 계정은 Slave DB로 복제를 합니다. 모든 ip에 대해 권한을 열어줍니다.
+````bash
+$ CREATE USER 'bookroot'@'%' IDENTIFIED BY '1234';
+$ ALTER USER 'bookroot'@'%' IDENTIFIED WITH mysql_native_password BY '1234';
+$ GRANT REPLICATION SLAVE ON *.* TO 'bookroot'@'%';
+$ FLUSH PRIVILEGES;
+````
+mysql의 USER 테이블을 확인하여 생성한 계정이 있는지 확인 합니다.
 
