@@ -7,3 +7,44 @@ DB 이중화 등 여러가지 적용해 볼 수 있다. 그 중 DB Replication�
 트래픽을 분산시켜 속도 향상을 볼 수 있다.
 위 그림과 같이 Replication 처리되어 동기화되고 있는 Master, Slave EB가 각각 존재한다면
 애플리케이션에서 쓰기 작업은 Master DB로 읽기 작업은 Slave DB로 분기시킵니다.
+
+서버에서 docker를 이용해 구성하기
+
+````bash
+$ docker pull mysql
+
+// docker 이미지가 잘 다운되었는지 확인
+$ docker images
+````
+이미지를 master, slave를 docker로 실행
+
+````bash
+$ docker run -p 3306 --name mysql-master -e MYSQL_ROOT_PASSWORD=1234 -d docker.io/mysql
+````
+mysql-master라는 이름으로 3306포트에 mysql 실행 완료
+docker의 exec 명령어로 mysql 내부 접속
+````bash
+$ docker exec -it mysql-master /bin/bash
+````
+mysql 내부에 vim이 없으므로 설치 합니다.
+````bash
+$ apt-get update
+$ apt-get install -y vim
+````
+
+/etc/mysql/my.cnf 파일을 열고, 다음 2줄을 추가합니다.
+````bash
+log-bin=mysql-bin  
+server-id=1
+````
+그리고 docker를 재시작합니다.
+````bash
+$ docker restart mysql-master
+````
+설정이 제대로 되었는지 확인합니다.
+````bash
+$ docker exec -it mysql-master /bin/bash
+$ mysql -u root -p 
+mysql> SHOW MASTER STATUS\G
+````
+
