@@ -79,3 +79,71 @@ mysql 접속을 종료하고, 로컬 환경에서 dump.sql를 가져옵니다.
 $ docker cp mysql-master:dump.sql .
 $ cat dump.sql
 ````
+
+#### Slave DB 계정 생성하기
+Slave DB 생성을 위해 docker를 이용 새로운 mysql를 생성합니다.
+````bash
+$ docker run -p 3306 --name mysql-slave -e MYSQL_ROOT_PASSWORD=1234 --link mysql-master -d docker.io/mysql
+````
+생성이 완료 되었다면 확인을 합니다.
+````bash
+$ docker ps
+````
+Master, Slave DB 2개가 실행되어 있을 겁니다.
+
+Slave DB mysql에 접속해 vim을 설치합니다.
+````bash
+$ docker exec -it mysql-slave /bin/bash
+$ apt-get update; apt-get install vim -y
+````
+/etc/mysql/my.cnf에 접속해 log-bin과 server-id를 추가합니다.
+````bash
+log-bin=mysql-bin  
+server-id=2
+````
+docker를 재시작합니다.
+````bash
+docker restart mysql-slave
+````
+로컬 환경에 있는 dump 파일을 Slave DB에 복사합니다.
+Slave DB에 접속해 dump 파일을 적용합니다.
+````bash
+$ docker cp dump.sql mysql-slave:.
+$ docker exec -it mysql-slave /bin/bash
+
+$ mysql -u root -p
+mysql> CREATE DATABASE bookclub;
+
+mysql> exit
+
+$ mysql -u root -p bookclub < dump.sql
+````
+Master DB에서 생성한 testtable과 데이터가 복제되어 있습니다.
+
+Master DB mysql에 접속해서 SHOW MASTER STATUS\G를 확인합니다.
+처음에 비해 DB 테이블과 쿼리들이 추가됐으므로 이전보다 Position이 증가했습니다.
+
+#### Slave DB와 Master DB 연결
+Slave DB mysql에 접속해, Master를 mysql-master로 변경하고 Slave DB를 시작합니다.
+````bash
+$ docker exec -it mysql-slave /bin/bash
+
+$ mysql -u root -p 
+
+mysql> CHANGE MASTER TO MASTER_HOST='mysql-master', MASTER_USER='bookroot', MASTER_PASSWORD='1234', MASTER_LOG_FILE='mysql-bin.000001', MASTER_LOG_POS=1721;
+
+mysql> START SLAVE;
+````
+명령어 설명
+MASTER_HOST : master 서버의 호스트명
+MASTER_USER : master 서버의 mysql에서 REPLICATION SLAVE 권한을 가진 User 계정의 이름
+MASTER_PASSWORD : master 서버의 mysql에서 REPLICATION SLAVE 권한을 가진 User 계정의 비밀번호
+MASTER_LOG_FILE : master 서버의 바이너리 로그 파일명
+MASTER_LOG_POS : master 서버의 현재 로그의 위치
+
+Slave DB에서 연결정보를 조회해보면 mysql-master와 연결된 정보가 나옵니다.
+````bash
+mysql> SHOW SLAVE STATUS\G
+````
+
+mysql-master에서 데이터를 insert하고 mysql-slave에서 조회하면 insert한 데이터가 나옵니다.
