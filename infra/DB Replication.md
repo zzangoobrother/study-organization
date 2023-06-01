@@ -147,3 +147,93 @@ mysql> SHOW SLAVE STATUS\G
 ````
 
 mysql-master에서 데이터를 insert하고 mysql-slave에서 조회하면 insert한 데이터가 나옵니다.
+
+### Spring Master/Slave 설정
+````java
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+
+import static org.springframework.transaction.support.TransactionSynchronizationManager.isCurrentTransactionReadOnly;
+
+public class DynamicRoutingDataSource extends AbstractRoutingDataSource {
+
+    @Override
+    protected Object determineCurrentLookupKey() {
+        return isCurrentTransactionReadOnly() ? "slave" : "master";
+    }
+
+}
+
+@RequiredArgsConstructor
+@Configuration
+@EnableTransactionManagement
+public class RoutingDataSourceConfig {
+
+    private final Environment env;
+
+    @ConfigurationProperties(prefix = "spring.datasource.hikari.master")
+    @Bean
+    public DataSource masterDataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @ConfigurationProperties(prefix = "spring.datasource.hikari.slave")
+    @Bean
+    public DataSource slaveDataSource() {
+        return DataSourceBuilder.create().type(HikariDataSource.class).build();
+    }
+
+    @DependsOn({"masterDataSource", "slaveDataSource"})
+    @Bean
+    public DataSource routingDataSource(
+            @Qualifier("masterDataSource") DataSource master,
+            @Qualifier("slaveDataSource") DataSource slave) {
+        DynamicRoutingDataSource routingDataSource = new DynamicRoutingDataSource();
+
+        Map<Object, Object> dataSourceMap = new HashMap<>();
+        dataSourceMap.put("master", master);
+        dataSourceMap.put("slave", slave);
+
+        routingDataSource.setTargetDataSources(dataSourceMap);
+        routingDataSource.setDefaultTargetDataSource(master);
+
+        return routingDataSource;
+    }
+
+    @DependsOn({"routingDataSource"})
+    @Bean
+    public DataSource dataSource(DataSource routingDataSource) {
+        return new LazyConnectionDataSourceProxy(routingDataSource);
+    }
+
+    @Primary
+    @Bean
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(DataSource dataSource) {
+
+        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+        em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+        em.setDataSource(dataSource);
+        em.setPackagesToScan(new String[]{"com.flab.goodchoice"});
+        em.setPersistenceUnitName("master");
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("hibernate.physical_naming_strategy",
+                SpringPhysicalNamingStrategy.class.getName());
+        properties.put("hibernate.implicit_naming_strategy",
+                SpringImplicitNamingStrategy.class.getName());
+        properties.put("hibernate.hbm2ddl.auto", env.getProperty("spring.jpa.hibernate.ddl-auto"));
+        em.setJpaPropertyMap(properties);
+
+        return em;
+    }
+
+    @Primary
+    @Bean
+    public PlatformTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory);
+
+        return transactionManager;
+    }
+
+}
+````
