@@ -41,6 +41,7 @@ $ cd /etc/nginx
 ````
 
 위 경로로 들어 갑니다. nginx.conf 파일을 수정합니다.
+
 <img width="595" alt="11" src="https://github.com/zzangoobrother/study-organization/assets/42162127/9082eee5-fda5-4178-bb46-a381c0b56cbb">
 
 ````bash
