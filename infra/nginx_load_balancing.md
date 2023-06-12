@@ -41,7 +41,7 @@ $ cd /etc/nginx
 ````
 
 위 경로로 들어 갑니다. nginx.conf 파일을 수정합니다.
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/caf13b17-e8f2-4bc9-b13c-e067ffc0df99/Untitled.png)
+<img width="595" alt="11" src="https://github.com/zzangoobrother/study-organization/assets/42162127/9082eee5-fda5-4178-bb46-a381c0b56cbb">
 
 ````bash
 upstream 이름 아무거나 {
@@ -62,7 +62,7 @@ $ cd /etc/nginx/conf.d
 $ vi default.conf
 ````
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/af804833-9258-429c-bb43-83aa444a0396/Untitled.png)
+<img width="588" alt="22" src="https://github.com/zzangoobrother/study-organization/assets/42162127/683a98e3-a2c9-45f5-822f-47e8fc90ac6d">
 
 위에서 설정된 내용을 proxy에 적용합니다.
 ````bash
