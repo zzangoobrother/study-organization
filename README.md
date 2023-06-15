@@ -20,3 +20,26 @@
 
 ## 디자인 패턴
 + <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/싱글톤%20패턴.md' target='_blank' >싱글톤 패턴</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/팩토리%20패턴.md' target='_blank' >팩토리 패턴</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/전략%20패턴.md' target='_blank' >전략 패턴</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/옵저버%20패턴.md' target='_blank' >옵저버 패턴</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/프록시%20패턴.md' target='_blank' >프록시 패턴</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/템플릿%20메소드%20패턴.md' target='_blank' >템플릿 메소드 패턴</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/상태%20패턴(state%20pattern).md' target='_blank' >상태 패턴(state pattern)</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/pattern/반복자%20패턴(Iterator%20Pattern).md' target='_blank' >반복자 패턴 (Iterator Pattern)</a>
+
+## Spring
+#### core
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/1.%20IOC%20-%20Annotation%20기반%20bean%20등록원리1.md' target='_blank' >IOC - Annotation 기반 bean 등록원리1</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/1.%20IOC%20-%20Annotation%20기반%20bean%20등록원리2.md' target='_blank' >IOC - Annotation 기반 bean 등록원리2</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/ApplicationContext%20내부.md' target='_blank' >ApplicationContext 내부</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/생성자주입원리.md' target='_blank' >생성자주입원리</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/필드%2C메소드%20주입.md' target='_blank' >필드,메소드 주입</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/Bean%20초기화%20과정' target='_blank' >Bean 초기화 과정</a>
+
+#### 설정
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/multi/설정.md' target='_blank' >멀티 모듈 설정</a>
+
+## infra
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/infra/DB%20Replication.md' target='_blank' >DB Replication</a>
++ <a href='https://github.com/zzangoobrother/study-organization/blob/main/infra/nginx_load_balancing.md' target='_blank' >nginx_load_balancing</a>
