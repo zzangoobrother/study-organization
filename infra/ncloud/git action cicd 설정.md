@@ -153,3 +153,82 @@ on: pull_request
 ````
 이렇게 하시면 pull request가 발생하면 github action이 실행 됩니다.
 
+````shell
+runs-on: ubuntu-latest
+````
+서버가 ubuntu에서 실행되기 때문에 설정했습니다.
+
+````shell
+- name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to NCP Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.NCP_CONTAINER_REGISTRY }}
+          username: ${{ secrets.NCP_ACCESS_KEY }}
+          password: ${{ secrets.NCP_SECRET_KEY }}
+````
+nCloud Container Registry에 접속합니다.
+
+````shell
+- name: Admin build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./module-admin/Dockerfile
+          push: true
+          tags: ${{ secrets.NCP_CONTAINER_REGISTRY }}/admin:latest
+          cache-from: type=registry,ref=${{ secrets.NCP_CONTAINER_REGISTRY }}/admin:latest
+          cache-to: type=inline
+````
+Dockerfile를 실행하고 Container Registry에 push 합니다.
+
+Dockerfile
+````shell
+FROM openjdk:17
+
+COPY module-admin/build/libs/module-admin-0.0.1-SNAPSHOT.jar ./app.jar
+ENV TZ=Asia/Seoul
+ENTRYPOINT ["java", "-Dspring.profiles.active=${USE_PROFILE}", "-jar", "./app.jar"]
+````
+
+CI 기능은 끝났습니다. 다음은 CD 입니다.
+
+````shell
+name: Connect server ssh and pull from container registry
+needs: push_to_registry
+````
+needs 는 push_to_registry 가 끝나고 시작됩니다.
+
+````java
+steps:
+   - name: connect ssh
+     uses: appleboy/ssh-action@master
+     with:
+      host: ${{ secrets.PROD_SERVER_HOST }}
+      username: ${{ secrets.PROD_SERVER_USERNAME }}
+      password: ${{ secrets.PROD_SERVER_PASSWORD }}
+      port: ${{ secrets.PROD_SERVER_PORT_ADMIN }}
+````
+ssh를 통해 운영서버에 접속합니다.  
+host : 서버 접속용 공인 IP  
+username: root  
+password: 서버 설정한 password  
+port: 서버 접속용 공인 포트번호
+
+Container Registry에 새로 업로드된 docker image를 pull 받고 지금 실행되고 있는 docker를 중지합니다.  
+그리고 기존 docker image를 삭제 후 새로 받은 docker imgea를 실행 합니다.
+
+secrets key
+NCP_ACCESS_KEY : 마이페이지에서 받은 인증키  
+NCP_SECRET_KEY : 마이페이지에서 받은 비밀키  
+NCP_CONTAINER_REGISTRY : Container Registry public endpoint  
+DEV_HOST : server 접속용 공인 ip  
+DEV_USERNAME : root  
+DEV_PASSWORD : server 설정 비밀번호  
+DEV_PORT : ssh 포트  
+
+그리고 만약 pull request를 거의 동시에 하여 동시에 배포 중이라면 선행 작업이 완료되고 후행 작업이 완료되면 괜찮지만 후행 작업이 먼저 완료하고 선행 작업이 완료된다면 이전 버전이 운영서버에 배포된 상황이다.  
+이 문제 해결은 추후 다루도록 하겠다. 우선 아래 참고 블로그를 보시면 된다.
+
++ <a href='https://hyeon9mak.github.io/github-actions-deployment-concurrency-setting/' target='_blank' >현구막님 중복 배포 해결</a>
