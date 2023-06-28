@@ -101,8 +101,55 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
     - name: Build with Gradle
-      uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
-      with:
-        arguments: build
+      run: ./gradlew clean :멀티모듈명:buildNeeded -Dspring.profiles.active=prod --stacktrace --info --refresh-dependencies
+
+    - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Login to NCP Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.NCP_CONTAINER_REGISTRY }}
+          username: ${{ secrets.NCP_ACCESS_KEY }}
+          password: ${{ secrets.NCP_SECRET_KEY }}
+
+    - name: Admin build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./module-admin/Dockerfile
+          push: true
+          tags: ${{ secrets.NCP_CONTAINER_REGISTRY }}/admin:latest
+          cache-from: type=registry,ref=${{ secrets.NCP_CONTAINER_REGISTRY }}/admin:latest
+          cache-to: type=inline
+
+   pull_from_registry:
+    name: Connect server ssh and pull from container registry
+    needs: push_to_registry
+    runs-on: ubuntu-latest
+    steps:
+      - name: connect ssh
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.PROD_SERVER_HOST }}
+          username: ${{ secrets.PROD_SERVER_USERNAME }}
+          password: ${{ secrets.PROD_SERVER_PASSWORD }}
+          port: ${{ secrets.PROD_SERVER_PORT_ADMIN }}
+          script: |
+            ./deploy.sh // 실행 스크립트 작성
 ````
+
+````shell
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+````
+소스를 push 또는 pull request 할때 github action이 실행됩니다.
+
+지금은 예제를 보여주기 위해 push pull request 모두 있지만 운영 안정성을 생각하면 코드 리뷰와 함께 pull request가 발생하면 실행 되게 해야 합니다. 그리고 main, stage, dev 같이 서버가 따로 설정되어 있고, 할 때는
+````shell
+on: pull_request
+````
+이렇게 하시면 pull request가 발생하면 github action이 실행 됩니다.
 
