@@ -65,7 +65,7 @@
 
 
 <details>
-<summary>Spring/summary>
+<summary>Spring</summary>
 
 + <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/1.%20IOC%20-%20Annotation%20기반%20bean%20등록원리1.md' target='_blank' >IOC - Annotation 기반 bean 등록원리1</a>
 + <a href='https://github.com/zzangoobrother/study-organization/blob/main/spring/core/1.%20IOC%20-%20Annotation%20기반%20bean%20등록원리2.md' target='_blank' >IOC - Annotation 기반 bean 등록원리2</a>
@@ -79,7 +79,7 @@
 
 
 <details>
-<summary>Spring/summary>
+<summary>infra</summary>
 
 + <a href='https://github.com/zzangoobrother/study-organization/blob/main/infra/DB%20Replication.md' target='_blank' >DB Replication</a>
 + <a href='https://github.com/zzangoobrother/study-organization/blob/main/infra/nginx_load_balancing.md' target='_blank' >nginx_load_balancing</a>
