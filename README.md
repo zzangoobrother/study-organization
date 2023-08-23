@@ -6,4 +6,4 @@
 
 + <a href='https://github.com/zzangoobrother/study-organization/tree/main/spring' target='_blank' >Spring</a>
 
-+ <a href='https://github.com/zzangoobrother/study-organization/tree/main/infra' target='_blank' >DB Replication</a>
++ <a href='https://github.com/zzangoobrother/study-organization/tree/main/infra' target='_blank' >Infra</a>
