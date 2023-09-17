@@ -45,7 +45,9 @@ AWS Fargate를 체크하고, CPU와 메모리를 선택하는데 메모리를 2G
 컨테이너 포트는 8080으로 포트 이름을 입력한다.
 
 <img width="1410" alt="image" src="https://github.com/zzangoobrother/study-organization/assets/42162127/75edca79-4fc4-4ea1-8e31-30f024461f2d">
-![image](https://github.com/zzangoobrother/study-organization/assets/42162127/e218cc13-2c2d-47b1-8065-a15e6b15ef7d)
+
+![image](https://github.com/zzangoobrother/study-organization/assets/42162127/98a50ff7-fc2a-4b01-ae48-21b6139bec81)
+
 
 생성한 컨테이너 정의에서 json 파일을 다운받아 프로젝트 루트 경로에 넣어준다.
 ECR 도커 이미지 배포 후 해당 json 파일로 ECS 클러스터 내에서 Task를 실행하게 된다.
