@@ -130,11 +130,11 @@ $ docker cp dump.sql mysql-slave:.
 $ docker exec -it mysql-slave /bin/bash
 
 $ mysql -u root -p
-mysql> CREATE DATABASE bookclub;
+mysql> CREATE DATABASE book;
 
 mysql> exit
 
-$ mysql -u root -p bookclub < dump.sql
+$ mysql -u root -p book < dump.sql
 ````
 Master DB에서 생성한 testtable과 데이터가 복제되어 있습니다.
 
