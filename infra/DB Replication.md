@@ -19,7 +19,7 @@ $ docker images
 이미지를 master, slave를 docker로 실행
 
 ````bash
-$ docker run -p 3306 --name mysql-master -e MYSQL_ROOT_PASSWORD=1234 -d docker.io/mysql
+$ docker run -p 3306 --name mysql-master -e MYSQL_ROOT_PASSWORD=1234 -e TZ=Asia/Seoul -d docker.io/mysql
 ````
 mysql-master라는 이름으로 3306포트에 mysql 실행 완료
 docker의 exec 명령어로 mysql 내부 접속
@@ -99,7 +99,7 @@ $ cat dump.sql
 #### Slave DB 계정 생성하기
 Slave DB 생성을 위해 docker를 이용 새로운 mysql를 생성합니다.
 ````bash
-$ docker run -p 3306 --name mysql-slave -e MYSQL_ROOT_PASSWORD=1234 --link mysql-master -d docker.io/mysql
+$ docker run -p 3306 --name mysql-slave -e MYSQL_ROOT_PASSWORD=1234 -e TZ=Asia/Seoul --link mysql-master -d docker.io/mysql
 ````
 생성이 완료 되었다면 확인을 합니다.
 ````bash
@@ -253,3 +253,6 @@ public class RoutingDataSourceConfig {
 
 }
 ````
+
+참고
+https://onethejay.tistory.com/182
