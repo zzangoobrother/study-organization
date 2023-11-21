@@ -26,16 +26,32 @@ docker의 exec 명령어로 mysql 내부 접속
 ````bash
 $ docker exec -it mysql-master /bin/bash
 ````
+
+우선 아래와 같이 docker 내부 파일을 서버로 복사 후 수정, 그리고 수정된 파일을 docker에 덮어쓰기를 합니다.
+```bash
+$ docker cp CONTAINER:FILEPATH LOCALFILEPATH
+$ vi LOCALFILEPATH
+$ docker cp LOCALFILEPATH CONTAINER:FILEPATH
+
+// 예시
+$ cp apache24:/usr/local/apache2/conf/httpd.conf /custom_docker_share
+$ vim httpd.confdocker
+$ cp /custom_docker_share apache24:/usr/local/apache2/conf/httpd.conf
+
+````
+
 mysql 내부에 vim이 없으므로 설치 합니다.
 ````bash
 $ apt-get update
 $ apt-get install -y vim
 ````
 
-/etc/mysql/my.cnf 파일을 열고, 다음 2줄을 추가합니다.
+/etc/mysql/my.cnf 파일을 열고, 다음 2줄을 맨 아래에 추가합니다.
 ````bash
 log-bin=mysql-bin  
 server-id=1
+binlog_format = row 
+expire_logs_days = 2
 ````
 그리고 docker를 재시작합니다.
 ````bash
