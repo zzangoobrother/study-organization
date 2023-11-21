@@ -75,7 +75,7 @@ mysql의 USER 테이블을 확인하여 생성한 계정이 있는지 확인 합
 
 DB에서 book 사용자를 생성합니다.
 ````bash
-$ CREATE DATABSE book;
+$ CREATE DATABASE book;
 ````
 book에서 testtable 테이블을 만들고 test row 라는 데이터를 넣습니다.
 ````bash
