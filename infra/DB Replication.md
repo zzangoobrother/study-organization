@@ -87,7 +87,7 @@ $ select * from testtable;
 
 Master DB에서 dump를 합니다.
 ````bash
-$ mysqldump -u root -p bookclub > dump.sql
+$ mysqldump -u root -p book > dump.sql
 ````
 
 mysql 접속을 종료하고, 로컬 환경에서 dump.sql를 가져옵니다.
