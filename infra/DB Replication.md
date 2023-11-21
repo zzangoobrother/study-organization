@@ -80,7 +80,7 @@ $ CREATE DATABASE book;
 book에서 testtable 테이블을 만들고 test row 라는 데이터를 넣습니다.
 ````bash
 $ use book;
-$ create table testtable { text varchar(20) };
+$ create table testtable ( text varchar(20) );
 $ insert into testtable values ('test row');
 $ select * from testtable;
 ````
