@@ -116,6 +116,8 @@ public enum DiscountConditionType {
 </table>
 
 데이터 중심의 영화 예매
+
+[영화예매시스템 리팩토링 v1](https://github.com/zzangoobrother/study-project/tree/master/book-objects/src/main/java/chapter4/v1)
 ````java
 public class ReservationAgency {
     private Reservation reserve(Screening screening, Customer customer, int audienceCount) {
@@ -185,3 +187,113 @@ public class ReservationAgency {
 - 낮은 응집도
   - 변경과 아무 상관 없는 코드들이 영향을 받게 된다.
   - 하나의 요구사항 변경을 반영하기 위해 동시에 여러 모듈을 수정해야 한다.
+
+#### 자율적인 객체를 향해
+##### 캡슐화를 지켜라
+
+```java
+class Rectangle {
+    private int left;
+    private int top;
+    private int right;
+    private int bottom;
+
+    public Rectangle(int left, int top, int right, int bottom) {
+        this.left = left;
+        this.top = top;
+        this.right = right;
+        this.bottom = bottom;
+    }
+
+    public int getLeft() {
+        return left;
+    }
+
+    public void setLeft(int left) {
+        this.left = left;
+    }
+
+    public int getTop() {
+        return top;
+    }
+
+    public void setTop(int top) {
+        this.top = top;
+    }
+
+    public int getRight() {
+        return right;
+    }
+
+    public void setRight(int right) {
+        this.right = right;
+    }
+
+    public int getBottom() {
+        return bottom;
+    }
+
+    public void setBottom(int bottom) {
+        this.bottom = bottom;
+    }
+}
+
+class AnyClass {
+    void anyMethod(Rectangle rectangle, int multiple) {
+        rectangle.setRight(rectangle.getRight() * multiple);
+        rectangle.setBottom(rectangle.getBottom() * multiple);
+    }
+}
+```
+
+- 코드 중복 발생 : 사각형의 너비와 높이를 증가시키는 코드가 필요하다면, right와 bottom을 가져온 후 수정자 메서드를 이용
+- 변경에 취약 : right, bottom -> length, height 변경 한다면, 기존 접근자 메서드를 사용하던 모든 코드에 영향을 미친다.
+```java
+class Rectangle {
+    public void enlarge(int multiple) {
+        right *= multiple;
+        bottom *= multiple;
+    }
+}
+```
+
+- Rectangle 변경 주체를 외부의 객체에서 Rectangle로 이동
+- 책임을 객체 내부로 이동
+
+##### 스스로 자신의 데이터를 책임지는 객체
+- 이 객체가 어떤 데이터를 포함해야 하는가?
+  - 이 객체가 어떤 데이터 를 포함해야 하는가?
+  - 이 객체가 데이터에 대해 수행해야 하는 오퍼레이션은 무엇인가?
+
+[영화예매시스템 리팩토링 v2](https://github.com/zzangoobrother/study-project/tree/master/book-objects/src/main/java/chapter4/v2)
+
+##### 하지만 여전히 부족하다
+- 캡슐화 위반
+  - isDiscountable(DayOfWeek dayOfWeek, LocalTime time), isDiscountable(int sequence)의 파라미터로 DayOfWeek, time, sequence 의 파라미터가 포함된다는 것을 보여준다.
+    내부 구현이 노출되면서 캡슐화 부족 '파급 효과'가 발생한다.
+  - Movie도 calculateAmountDiscountFee, calculatePercentDiscountFee, calculateNoneDiscountFee 메소드로 어떤 할인 정책을 외부에 노출시키고 있다.
+
+- 높은 결합도
+  - 두 객체 사이에 결합도가 높을 경우 한 객체의 구현을 변경할 때 다른 객체에게 변경의 영향이 전파될 확률이 높아진다.
+  - DiscountCondition이 변경된다면 Movie에게 영향을 미칠수 있다.
+    - 할인 조건 추가/삭제/변경
+  - 유연한 설계를 창조하기 위해 캡슐화를 설계의 첫 번째 목표로 삼아야 한다.
+
+- 낮은 응집도
+  - DiscountCondition이 변경된다면 Movie 뿐만 아니라 Movie의 isDiscountable 메서드를 사용하는 Screening도 수정해야 한다.
+
+##### 데이터 중심 설계의 문제점
+- 데이터 중심 설계가 변경에 취약한 이유
+  - 본질적으로 너무 이른 시기에 데이터에 관해 결정하도록 강요한다.
+  - 협력이라는 문맥을 고려하지 않고 객체를 고립시킨 채 오퍼레이션을 결정한다.
+
+- 데이터 중심 설계는 객체의 행동보다는 상태에 초점을 맞춘다
+  - 데이터 중심 설계에 익숙한 개발자들은 일반적으로 데이터와 기능을 분리하는 절차적 프로그래밍 방식을 따른다. 상태와 행동을 하나의 단위로 캡슐화하는 객체지향 패러다임에 반하는 것
+  - 데이터를 먼저 결정하고 데이터를 처리하는 데 필요한 오퍼레이션을 나중에 결정하는 방식은 데이터에 관한 지식이 객체의 인터페이스에 노출
+  결론적으로 데이터 중심 설계는 너무 이른 시기에 데이터에 대해 고민하기 때문에 캡슐화에 실패하게 된다.
+
+- 데이터 중심 설계는 객체를 고립시킨 채 오퍼레이션을 정의하도록 만든다
+  - 올바른 객체지향은 무게 중심을 항상 객체 내부가 아니라 외부에 맞춰져 있어야 한다.
+  - 중요한 것은 객체가 다른 객체와 협력하는 방법이다.
+  - 객체의 구현이 이미 결정된 상태에서 다른 객체와의 협력 방법을 고민하기 때문에 이미 구현된 객체의 인터페이스를 억지로 끼워맞출 수밖에 없다.
+  - 객체의 인터페이스에 구현이 노출 -> 협력이 구현 세부사항에 종속 -> 객체 내부 구현이 변경됐을 때 협력하는 객체 모두 영향을 받을 수밖에 없다.
