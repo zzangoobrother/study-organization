@@ -107,3 +107,134 @@ Screening의 가장 중요한 책임은 예매를 생성하는 것이다. Discou
 #### 구현을 통한 검증
 [영화예매시스템 v1](https://github.com/zzangoobrother/study-project/tree/master/book-objects/src/main/java/chapter5/v1)
 
+##### DiscountCondition 개선하기
+DiscountCondition은 하나 이상의 변경 이유를 가지기 때문에 응집도가 낮다.
+
+- 새로운 할인 조건 추가
+  - isSatisfiedBy 메서드 안 if ~ else 구문을 수정해야 한다.
+  - 새로운 할인 조건이 새로운 데이터를 요구하면 DiscountCondition 속성 추가
+- 순번 조건을 판단하는 로직 변경
+  - isSatisfiedBySequence 메서드 내부 구현 수정
+  - 순번 조건을 판단하는 데 필요한 데이터가 변경된다면 DiscountCondition의 sequence 속성 변경
+- 기간 조건을 판단하는 로직이 변경되는 경우
+  - isSatisfiedByPeriod 메서드 내부 구현 수정
+  - 기간 조건을 판단하는 데 필요한 데이터가 변경된다면 DiscountCondition의 속성 변경
+
+###### 변경의 이유에 따라 클래스를 분리
+- 코드를 통해 변경의 이유 파악할 수 있는 방법
+  - 인스턴스 변수가 초기화되는 시점 살펴보는 것
+    - 응집도가 낮은 클래스는 객체의 속성 중 일부만 초기화하고 일부는 초기화되지 않은 상태로 남겨진다.
+    - 함께 초기화되는 속성을 기준으로 코드를 분리해야 한다.
+  - 메서드들이 인스턴스 변수를 사용하는 방식 살펴보는 것
+    - 모든 메서드가 모든 속성을 사용한다면 클래스의 응집도 높음
+    - 메서드들이 사용하는 속성에 따라 그룹이 나뉜다면 클래스의 응집도가 낮음
+    - 속성 그룹과 해당 그룹에 접근하는 메서드 그룹을 기준으로 코드를 분리해야 한다.
+
+##### 타입 분리하기
+- DiscountCondition -> PeriodCondition, SequenceCondition으로 분리
+- Movie에 List<PeriodCondition>, List<SequenceCondition> 로 Movie의 결합도가 높아짐
+
+````java
+public class PeriodCondition {
+  private DayOfWeek dayOfWeek;
+  private LocalTime startTime;
+  private LocalTime endTime;
+
+  public PeriodCondition(DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
+    this.dayOfWeek = dayOfWeek;
+    this.startTime = startTime;
+    this.endTime = endTime;
+  }
+
+  public boolean isSatisfiedBy(Screening screening) {
+    return dayOfWeek.equals(screening.getWhenScreened().getDayOfWeek()) &&
+            startTime.compareTo(screening.getWhenScreened().toLocalTime()) <= 0 &&
+            endTime.compareTo(screening.getWhenScreened().toLocalTime()) >= 0;
+  }
+}
+````
+
+````java
+public class SequenceCondition {
+  private int sequence;
+
+  public SequenceCondition(int sequence) {
+    this.sequence = sequence;
+  }
+
+  public boolean isSatisfiedBy(Screening screening) {
+    return sequence == screening.getSequence();
+  }
+}
+````
+
+````java
+public class Movie {
+    
+  private List<PeriodCondition> periodConditions;
+  private List<SequenceCondition> sequenceConditions;
+
+  private boolean isDiscountable(Screening screening) {
+    return checkPeriodConditions(screening) || checkSequenceConditions(screening);
+  }
+
+  private boolean checkPeriodConditions(Screening screening) {
+    return periodConditions.stream()
+            .anyMatch(condition -> condition.isSatisfiedBy(screening));
+  }
+
+  private boolean checkSequenceConditions(Screening screening) {
+    return sequenceConditions.stream()
+            .anyMatch(condition -> condition.isSatisfiedBy(screening));
+  }
+}
+````
+
+##### 다형성을 통해 분리하기
+Movie는 할인 가능 여부만 반환 받으면 되기에 PeriodCondition, SequenceCondition 인지 상관없다. 오직 역할에 대해서만 결합되도록 의존성을 제한할 수 있다.
+
+````java
+public interface DiscountCondition {
+  boolean isSatisfiedBy(Screening screening);
+}
+````
+
+````java
+public class PeriodCondition implements DiscountCondition {
+    
+}
+````
+
+````java
+public class SequenceCondition implements DiscountCondition {
+    
+}
+````
+
+````java
+public class Movie {
+  private List<DiscountCondition> discountConditions;
+
+  public Money calculateMovieFee(Screening screening) {
+    if (isDiscountable(screening)) {
+      return fee.minus(calculateDiscountAmount());
+    }
+
+    return fee;
+  }
+
+  private boolean isDiscountable(Screening screening) {
+    return discountConditions.stream()
+            .anyMatch(condition -> condition.isSatisfiedBy(screening));
+  }
+}
+````
+
+POLYMORPHISM(다형성) 패턴 : 변하는 행동이 있다면 타입을 분리하고 변화하는 행동을 각 타입의 책임으로 할당하라
+
+<pre>
+<br>POLYMORPHISM 패턴</br>
+: 타입을 명시적으로 정의하고 각 타입에 다형적으로 행동하는 책임을 할당
+- 객체의 타입에 따라 대안들을 수행하는 조건적인 논리를 사용하지 말라고 경고
+- 다형성을 이용해 새로운 변화를 다루기 쉽게 확장하라고 권고
+</pre>
