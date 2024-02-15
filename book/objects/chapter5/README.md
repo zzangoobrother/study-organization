@@ -238,3 +238,15 @@ POLYMORPHISM(다형성) 패턴 : 변하는 행동이 있다면 타입을 분리�
 - 객체의 타입에 따라 대안들을 수행하는 조건적인 논리를 사용하지 말라고 경고
 - 다형성을 이용해 새로운 변화를 다루기 쉽게 확장하라고 권고
 </pre>
+
+##### 변경으로부터 보호하기
+Movie로부터 PeriodCondition, SequenceCondition의 존재를 감춤
+
+GRASP에서는 PROTECTED VARIATIONS(변경 보호) 패턴이라 부름
+<pre>
+<br>PROTECTED VARIATIONS 패턴</br>
+: 변화가 얘상되는 불안정한 지점들을 식별하고 그 주위에 안정된 인터페이스를 형성하도록 책임을 할당
+- 변경이 될 가능성이 높은가? 그렇다면 캡슐화하라
+</pre>
+
+
