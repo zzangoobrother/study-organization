@@ -390,4 +390,20 @@ public class ReservationAgency {
 
 주석을 추가하는 대신 메서드를 작게 분해해서 각 메서드의 응집도를 높여라
 
+````java
+public class ReservationAgency {
+  public Reservation reserve(Screening screening, Customer customer, int audienceCount) {
+    boolean discountable = checkDiscountable(screening);
+    Money fee = calculateFee(screening, discountable, audienceCount);
+    return createReservation(screening, customer, audienceCount, fee);
+  }
+  // ....
+}
+````
 
+##### 객체를 자율적으로 만들자
+자신이 소유하고 있는 데이터를 자기 스스로 처리하도록 만드는 것이 자율적인 객체를 만드는 지름길이다.
+메서드를 이동할 때 캡슐화, 응집도, 결합도의 측면에서 이동 시킨 메서드의 적절성을 판단해야 한다.
+
+- 처음부터 책임 주도 설계 방법을 따르는 것보다 동작하는 코드를 작성한 후에 리팩터링하는 것이 더 훌륭한 결과물을 낳을 수 있다.
+- 캡슐화, 결합도, 응집도를 이해하고 훌륭한 객체지향 원칙을 적용하기 위해 노력한다면 책임 주도 설계 방법을 단계적으로 따르지 않더라도 얻을 수 있다.
