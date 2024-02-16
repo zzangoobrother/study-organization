@@ -249,4 +249,145 @@ GRASP에서는 PROTECTED VARIATIONS(변경 보호) 패턴이라 부름
 - 변경이 될 가능성이 높은가? 그렇다면 캡슐화하라
 </pre>
 
+#### Movie 클래스 개선하기
+영화 할인 정책, 두 가지를 하나의 클래스 안에 구현하고 있기에 Movie는 하나 이상의 이유로 변경된다. 응집도가 낮다.
+- 금액 할인 정책 : AmountDiscountMovie
+- 비율 할인 정책 : PercentDiscountMovie
+- 할인 정책을 적용하지 않음 : NoneDiscountMovie
+
+````java
+public abstract class Movie {
+  private String title;
+  private Duration runningTime;
+  private Money fee;
+
+  private List<DiscountCondition> discountConditions;
+
+  public Movie(String title, Duration runningTime, Money fee, DiscountCondition... discountConditions) {
+    this.title = title;
+    this.runningTime = runningTime;
+    this.fee = fee;
+    this.discountConditions = Arrays.asList(discountConditions);
+  }
+
+  public Money calculateMovieFee(Screening screening) {
+    if (isDiscountable(screening)) {
+      return fee.minus(calculateDiscountAmount());
+    }
+
+    return fee;
+  }
+
+  private boolean isDiscountable(Screening screening) {
+    return discountConditions.stream()
+            .anyMatch(condition -> condition.isSatisfiedBy(screening));
+  }
+
+  abstract protected Money calculateDiscountAmount();
+
+  protected Money getFee() {
+    return fee;
+  }
+}
+````
+
+````java
+public class AmountDiscountMovie extends Movie {
+  private Money discountAmount;
+
+  public AmountDiscountMovie(String title, Duration runningTime, Money fee, Money discountAmount, DiscountCondition... discountConditions) {
+    super(title, runningTime, fee, discountConditions);
+    this.discountAmount = discountAmount;
+  }
+
+  @Override
+  protected Money calculateDiscountAmount() {
+    return discountAmount;
+  }
+}
+````
+
+````java
+public class PercentDiscountMovie extends Movie {
+  private double percent;
+
+  public PercentDiscountMovie(String title, Duration runningTime, Money fee, double percent, DiscountCondition... discountConditions) {
+    super(title, runningTime, fee, discountConditions);
+    this.percent = percent;
+  }
+
+  @Override
+  protected Money calculateDiscountAmount() {
+    return getFee().times(percent);
+  }
+}
+````
+
+````java
+public class NoneDiscountMovie extends Movie {
+
+  public NoneDiscountMovie(String title, Duration runningTime, Money fee) {
+    super(title, runningTime, fee);
+  }
+
+  @Override
+  protected Money calculateDiscountAmount() {
+    return Money.ZERO;
+  }
+}
+````
+
+##### 변경과 유연성
+문제점
+- 새로운 할인 정책이 추가될 때마다 인스턴스를 생성, 상태를 복사, 식별자를 관리하는 코드를 추가하여 오류가 발생하기 쉽다.
+
+합성을 사용하여 해결하자
+- Movie 상속 계층에 구현된 할인 정책을 독립적인 DiscountPolicy로 분리 후 합성시키자.
+=> 2장 영화 예매 시스템 전체 구조 동일
+
+#### 책임 주도 설계의 대안
+##### 메서드 응집도
+영화 예매 시스템의 모든 절차가 집중되어 있는 ReservationAgency
+
+````java
+public class ReservationAgency {
+  private Reservation reserve(Screening screening, Customer customer, int audienceCount) {
+    Movie movie = screening.getMovie();
+
+    boolean discountable = false;
+    for (DiscountCondition condition : movie.getDiscountConditions()) {
+      if (condition.getType() == DiscountConditionType.PERIOD) {
+        discountable = screening.getWhenScreened().getDayOfWeek().equals(condition.getDayOfWeek()) &&
+                condition.getStartTime().compareTo(screening.getWhenScreened().toLocalTime()) <= 0 &&
+                condition.getEndTime().compareTo(screening.getWhenScreened().toLocalTime()) >= 0;
+      } else {
+        discountable = condition.getSequence() == screening.getSequence();
+      }
+
+      if (discountable) {
+        break;
+      }
+    }
+
+    Money fee;
+    if (discountable) {
+      chapter4.v1.Money discountAmount = chapter4.v1.Money.ZERO;
+      switch (movie.getMovieType()) {
+        case AMOUNT_DISCOUNT -> discountAmount = movie.getDiscountAmount();
+        case PERCENT_DISCOUNT -> discountAmount = movie.getFee().times(movie.getDiscountPercent());
+        case NONE_DISCOUNT -> discountAmount = Money.ZERO;
+      }
+
+      fee = movie.getFee().minus(discountAmount);
+    } else {
+      fee = movie.getFee();
+    }
+
+    return new Reservation(customer, screening, fee, audienceCount);
+  }
+}
+````
+
+주석을 추가하는 대신 메서드를 작게 분해해서 각 메서드의 응집도를 높여라
+
 
