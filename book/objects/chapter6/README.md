@@ -117,3 +117,70 @@ screening.getMovie().getDiscountConditions();
 
 ##### 묻지 말고 시켜라
 
+디미터 법칙은 훌륭한 메시지는 객체의 상태에 관해 묻지 말고 원하는 것을 시켜야 한다는 사실을 강조
+ - 절차적인 코드는 정보를 얻은 후에 결정한다. 객체지향 코드는 객체에게 그것을 하도록 시킨다.
+
+객체지향의 기본은 함께 변경될 확률이 높은 정보와 행동을 하나의 단위로 통합하는 것이다.
+
+객체의 정보를 이용하는 행동을 객체의 외부가 아닌 내부에 위치시키기 때문에 자연스럽게 정보와 행동을 동일한 클래스 안에 두게 된다.
+
+내부의 상태를 묻는 오퍼레이션을 인터페이스에 포함시키고 있다면 더 나은 방법은 없는지 고민해 보라
+
+##### 의도를 드러내는 인터페이스
+컨트 벡은 <Smalltalk Best Practice Patterns>에서 메서드를 명명하는 두 가지 방법을 설명했다.
+
+<table>
+<tr>
+<th>메서드의 이름은 내부의 구현 방법을 드러낸다</th>
+<th>'어떻게'가 아니라 '무엇'을 하는지를 드러낸다.</th>
+</tr>
+
+<tr><td>
+
+````java
+public class PeriodCondition {
+    public boolean isSatisfiedByPeriod(Screening screening) {...}
+}
+
+public class SequenceCondition {
+  public boolean isSatisfiedBySequence(Screening screening) {...}
+}
+````
+위 코드가 좋지 않은 이유 두 가지
+- 동일한 작업을 수행한다. 하지만 메서드의 이름이 다르기 때문에 두 메서드가 동일한 작업을 수행한다는 사실을 알기 어렵다.
+- 메서드 수준에서 캡슐화를 위반한다. 메서드 이름을 변경한다면 메시지를 전송하는 클라이언트의 코드도 함께 변경해야 한다.
+</td>
+
+<td>
+
+- 객체가 협력 안에서 수행해야 하는 책임에 관해 고민 해야함
+  - 외부의 객체가 메시지를 전송하는 목적을 먼저 생각하도록 만듦
+  - 결과적으로 협력하는 클라이언트의 의도에 부합하도록 메서드 이름을 짓게 된다.
+
+````java
+public class PeriodCondition {
+  public boolean isSatisfiedBy(Screening screening) {...}
+}
+
+public class SequenceCondition {
+  public boolean isSatisfiedBy(Screening screening) {...}
+}
+````
+
+- 클라이언트 입장에서 두 메서드는 동일한 메시지르 서로 다른 방법으로 처리하기 때문에 서로 대체 가능하다.
+
+````java
+public interface DiscountCondition { 
+    boolean isSatisfiedBy(Screening screening);
+}
+````
+</td>
+</tr>
+</table>
+
+메서드에 의도를 드러낼 수 있는 이름을 붙이기 위한 조언
+- 매두 다른 두 번째 구현을 상상하라, 해당 메서드에 동일한 이름을 붙인다고 상상해보라, 그렇게 하면 아마도 가장 추상적인 이름을 메서드에 붙일 것이다.
+
+결과와 목적만을 포함하도록 클래스와 어퍼레이션의 이름을 부여하라.
+
+방정식을 푸는 방법을 제시하지 말고 이를 공식으로 표현하라. 문제를 내라. 하지만 문제를 푸는 방법을 표현해서는 안 된다.
