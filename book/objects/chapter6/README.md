@@ -184,3 +184,301 @@ public interface DiscountCondition {
 결과와 목적만을 포함하도록 클래스와 어퍼레이션의 이름을 부여하라.
 
 방정식을 푸는 방법을 제시하지 말고 이를 공식으로 표현하라. 문제를 내라. 하지만 문제를 푸는 방법을 표현해서는 안 된다.
+
+#### 함께 모으기
+- 디미터 법칙을 위반하는 티켓 판매 도메인
+````java
+public class Theater { 
+    private TicketSeller ticketSeller;
+    
+    public Theater(TicketSeller ticketSeller) {
+        this.ticketSeller = ticketSeller;
+    }
+    
+    public void enter(Audience audience) {
+        if (audience.getBag().hasInvitation()) {
+            // ticketSeller가 TicketOffice 뿐만 아니라 getTicketOffice 포함된 Ticket도 알게 된다.
+            Ticket ticket = ticketSeller.getTicketOffice().getTicket();
+            audience.getBag().setTicket(ticket);
+        } else {
+          Ticket ticket = ticketSeller.getTicketOffice().getTicket();
+          // 기차 충돌 스타일
+          // 내부 구조에 대해 결합
+          audience.getBag().minusAmount(ticket.getFee());
+          ticketSeller.getTicketOffice().plusAmount(ticket.getFee());
+          audience.getBag().setTicket(ticket);
+        }
+    }
+}
+````
+- 디미터 법칙을 위반한 코드를 수정하는 일반적인 방법 : Audience와 TicketSeller의 내부 구조를 묻는 대신 직접 자신의 책임을 수행하도록 시키는 것
+
+##### 묻지 말고 시켜라
+- Theater가 TicketSeller에게 시키고 싶은 일을 가지도록 만들도록 수정
+  - TicketSeller에게 setTicket() 추가
+````java
+public class Theater {
+    public void enter(Audience audience) {
+        ticketSeller.setTicket(audience);
+    }
+}
+````
+
+````java
+public class TicketSeller {
+    public void setTicket(Audience audience) {
+        if (audience.getBag().hasInvitation()) {
+            Ticket ticket = ticketOffice.getTicket();
+            audience.getBag().setTicket(ticket);
+        } else {
+            Ticket ticket = ticketOffice.getTicket();
+            audience.getBag().minusAmount(ticket.getFee());
+            ticketOffice.plusAmount(ticket.getFee());
+        }
+    }
+}
+````
+
+- Audience가 스스로 티켓을 가지도록 만들자
+````java
+public class Audience {
+    public void setTicket(Ticket ticket) {
+      if (bag.hasInvitation()) {
+        bag.setTicket(ticket);
+        return 0L;
+      } else {
+        bag.setTicket(ticket);
+        bag.minusAmount(ticket.getFee());
+        return ticket.getFee();
+      }
+    }
+}
+````
+
+````java
+public class TicketSeller {
+    public void setTicket(Audience audience) {
+        ticketOffice.plusAmount(audience.setTicket(ticketOffice.getTicket()));
+    }
+}
+````
+
+- Audience가 Bag에게 원하는 일을 시키기 전에 hasInvitation 메서드를 이용해 초대권을 가지고 있는지 묻고 있음, 디미터 법칙 위반
+````java
+public class Bag {
+    public Long setTicket(Ticket ticket) {
+        if (hasInvitation()) {
+            this.ticket = ticket;
+            return 0L;
+        } else {
+            this.ticket = ticket;
+            minusAmount(ticket.getFee());
+            return ticket.getFee();
+        }
+    }
+    
+    private boolean hasInvitation() {
+        return invitation != null;
+    }
+    
+    private void minusAmount(Long amount) {
+        this.amount -= amount;
+    }
+}
+````
+
+````java
+public class Audience {
+    public void setTicket(Ticket ticket) {
+      return bag.setTicket(ticket);
+    }
+}
+````
+
+##### 인터페이스에 의도를 드러내자
+현재의 인터페이스는 클라이언트의 의도를 명확하게 드러내지 못한다.
+
+- Theater -> TicketSeller에게 setTicket => Audience에게 티켓을 판매
+  - setTicket -> sellTo 가 의도를 더 명확하게 표현
+- TicketSeller -> Audienct에게 setTicket => Audience가 티켓을 사도록 만드는 목적
+  - setTicket -> buy 변경
+- Audienct -> Bag에게 setTicket => 티켓을 보관하도록 만드는 목적
+  - setTicket -> hold 변경
+
+### 원칙의 함정
+#### 디미터 법틱은 하나의 도트(.)를 강제하는 규칙이 아니다
+
+````java
+IntStream.of(1, 15, 20, 3, 9).filter(x -> x > 10).distinct().count();
+````
+디미터 법칙을 위반하지 않았다.
+-> IntStream을 다른 IntStream으로 변환할 뿐이다.
+
+객체 내부 구현에 대한 어떤 정보도 외부로 노출하지 않았다.
+
+#### 결합도와 응집도의 충돌
+<table>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+
+<tr><td>
+
+````java
+public class Theater { 
+    public void enter(Audience audience) {
+        // Bag에 질문
+        if (audience.getBag().hasInvitation()) {
+            Ticket ticket = ticketSeller.getTicketOffice().getTicket();
+            // Bag 상태 변경
+            audience.getBag().setTicket(ticket);
+        } else {
+            Ticket ticket = ticketSeller.getTicketOffice().getTicket();
+            audience.getBag().minusAmount(ticket.getFee());
+            ticketSeller.getTicketOffice().plusAmount(ticket.getFee());
+            audience.getBag().setTicket(ticket);
+        }
+    }
+}
+````
+</td>
+
+<td>
+
+````java
+public class Audience { 
+    public void setTicket(Ticket ticket) {
+        if (bag.hasInvitation()) {
+            bag.setTicket(ticket);
+            return 0L;
+        } else {
+            bag.setTicket(ticket);
+            bag.minusAmount(ticket.getFee());
+            return ticket.getFee();
+        }
+    }
+}
+````
+</td>
+</tr>
+</table>
+
+안타깝게도 묻지 말고 시켜라와 디미터 법칙이 항상 긍정적인 결과로만 귀결되는 것은 아니다.
+- 맹목적으로 위임 메서드를 추가하면 어울리지 않는 오퍼레이션들 공존
+- 결과적으로 응집도가 낮아짐
+
+<table>
+<tr>
+<th>Before</th>
+<th>After</th>
+</tr>
+
+<tr><td>
+
+````java
+public class PeriodCondition implements DiscountCondition { 
+    public boolean isSatisfiedBy(Screening screening) {
+        return screening.getStartTime().getDayOfWeek().equals(dayOfWeek) &&
+                startTime.compareTo(screening.getStartTime().toLocalTime()) <= 0 &&
+                endTime.compareTo(screening.getStartTime().toLocalTime()) >= 0;
+    }
+}
+````
+Screening 의 내부 상태를 가져와서 사용하기 때문에 캡슐화를 위반한 것으로 보임
+</td>
+
+<td>
+
+````java
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+
+public class Screening {
+  public boolean isDiscountable(DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
+      return whenScreened.getDayOfWeek().equals(dayOfWeek) && 
+              startTime.compareTo(whenScreened.toLocalTime()) <= 0 &&
+              endTime.compareTo(whenScreened.toLocalTime()) >= 0;
+  }
+}
+
+public class PeriodCondition implements DiscountCondition {
+    public boolean isSatisfiedBy(Screening screening) {
+        return screening.isDiscountable(dayOfWeek, startTime, endTime);
+    }
+}
+````
+
+</td>
+</tr>
+</table>
+
+- Screening이 담당해야 하는 본질적인 책임과 멀다
+- Screening의 본질적인 책임은 영화 예매이다.
+- PeriodCondition의 입장은 할인 조건을 판단하는 책임이 본질적이다.
+
+가끔씩은 묻는 것 외에 다른 방법이 존재하지 않는 경우도 존재
+````java
+for(Movie each : movies) {
+    total += each.getFee();
+}
+````
+
+로버트 마틴 <클린코드>에서 디미터 법칙의 대상이 객체인지 자료구조인지 달렸다고 한다.
+
+객체 내부 구조를 숨겨야 하므로 디미터 법칙을 따르는게 좋고, 자료 구조라면 내부를 노출해야 한다.
+
+- 소프트웨어 설계에 법칙이란 존재하지 않는다.
+- 원칙을 맹신하지 마라
+- 적절한 상황과 부적절한 상황을 판단하는 안목을 길러라
+- 설계는 트레이드오프의 산물이다.
+- 소프트웨어 설계에 존재하는 몇 안 되는 법칙 중 하나는 "경우에 따라 다르다"라는 사실이다.
+
+### 명령-쿼리 분리 원칙
+<table>
+<tr>
+<th>프로시저</th>
+<th>함수</th>
+</tr>
+
+<tr>
+<td>
+
+- 정해진 절차에 따라 내부의 상태를 변경
+- 부수효과를 발생시킬 수 있지만 값을 반환할 수 없다.
+
+</td>
+
+<td>
+
+- 어떤 절차에 따라 필요한 값을 계산해서 반화는 루틴
+- 값을 반환할 수 있지만 부수효과를 발생시킬 수 없다.
+
+</td>
+</tr>
+</table>
+
+<table>
+<tr>
+<th>명령</th>
+<th>쿼리</th>
+</tr>
+
+<tr>
+<td>
+
+- 객체의 상태를 수정하는 오퍼레이션
+- 객체의 상태를 변경하는 명령은 반환값을 가질 수 없다.
+
+</td>
+
+<td>
+
+- 객체와 관련된 정보를 반환하는 오퍼레이션
+- 객체의 정보를 반환하는 쿼리는 상태를 변경할 수 없다.
+
+</td>
+</tr>
+</table>
+
+
