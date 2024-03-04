@@ -481,4 +481,65 @@ for(Movie each : movies) {
 </tr>
 </table>
 
+##### 반복 일정의 명령과 쿼리 분리하기
 
+````java
+public class Event {
+  public boolean isSatisfied(RecurringSchedule schedule) {
+    if (from.getDayOfWeek() != schedule.getDayOfWeek() ||
+            !from.toLocalTime().equals(schedule.getFrom())) {
+      reschedule(schedule);
+      return false;
+    }
+
+    return true;
+  }
+
+  private void reschedule(RecurringSchedule schedule) {
+    from = LocalDateTime.of(from.toLocalDate().plusDays(daysDistance(schedule)), schedule.getFrom());
+    duration = schedule.getDuration();
+  }
+
+  private long daysDistance(RecurringSchedule schedule) {
+    return schedule.getDayOfWeek().getValue() - from.getDayOfWeek().getValue();
+  }
+}
+````
+- isSatisfied 메서드에는 RecurringSchedule의 조건에 부합하는지 판단
+- 명령과 쿼리를 뒤섞으면 예측하기 어렵다.
+- 내부적으로 부수효과를 가지는 메서드는 이해하기 어렵고, 잘못 하용하기 쉬우며, 버그를 양상하는 경향이 있다.
+- 명령과 쿼리를 명확하게 분리 해보자
+
+````java
+public class Event {
+  public boolean isSatisfied(RecurringSchedule schedule) {
+    if (from.getDayOfWeek() != schedule.getDayOfWeek() ||
+            !from.toLocalTime().equals(schedule.getFrom()) ||
+            !duration.eqquals(schedule.getFrom())) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public void reschedule(RecurringSchedule schedule) {
+    from = LocalDateTime.of(from.toLocalDate().plusDays(daysDistance(schedule)), schedule.getFrom());
+    duration = schedule.getDuration();
+  }
+
+  private long daysDistance(RecurringSchedule schedule) {
+    return schedule.getDayOfWeek().getValue() - from.getDayOfWeek().getValue();
+  }
+}
+````
+
+##### 명령-쿼리 분리와 참조 투명성
+명령과 쿼리를 분리함으로 명령형 언어의 틀 안에서 참조 투명성의 장점을 제한적으로 누릴 수 있다.
+- 참조 투명성 : 어떤 표현식 e가 있을 때 e의 값으로 e가 나타나는 모든 위치를 교체하더라도 결과가 달라지지 않는 특성
+- 불변성 : 어떤 값이 변하지 않는 성질 => 부수효과가 발생하지 않는다
+
+##### 책임에 초점을 맞춰라
+- 디미터 법칙 : 메시지가 객체를 선택하게 함으로써 의도적으로 디미터 법칙을 위반할 위험 최소화
+- 묻지 말고 시켜라 : 메시지를 먼저 선택하면 묻지 말고 시켜라
+- 의도를 드러내는 인터페이스 : 클라이언트의 관점에서 메시지의 이름을 정한다, 클라이언트가 무엇을 원하는지, 그 의도가 분명하게 드러난다.
+- 명령-쿼리 분리 원칙 : 협력 속에서 객체의 상태를 예측하고 이해하기 쉽게 만들기 위한 방법에 관해 고민하게 됨
