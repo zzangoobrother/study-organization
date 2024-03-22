@@ -1,6 +1,6 @@
 # 공부 정리
 
-+ <a href='https://github.com/zzangoobrother/study-organization/tree/main/java' target='_blank' >책 읽고 정리</a>
++ <a href='https://github.com/zzangoobrother/study-organization/tree/main/book' target='_blank' >책 읽고 정리</a>
 
 + <a href='https://github.com/zzangoobrother/study-organization/tree/main/java' target='_blank' >Java</a>
 
