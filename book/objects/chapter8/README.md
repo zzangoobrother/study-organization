@@ -95,4 +95,97 @@
 - 숨겨진 의존성 : 의존성이 퍼블릭 인터페이스에 표현되지 않는다.
 
 ##### new는 해롭다
+new를 잘못 하용하면 클래스 사이의 결합도가 극단적으로 높아진다.
 
+결합도 측면에서 new가 해로운 이유
+- 구체 클래스의 이름을 직접 기술해야 한다. 따라서 new를 사용하는 클라이언트는 추상화가 아닌 구체 클래스에 의존할 수밖에 없기 때문에 결합도가 높아진다.
+- 생성하려는 구체 클래스뿐만 아니라 어떤 인자를 이용해 클래스의 생성자를 호출해야 하는지도 알아야 한다. 따라서 new를 사용하면 클라이언트가 알아야 하는 지식의 양이 늘어나기 때문에 결합도가 높아진다.
+
+해결 방법
+- 인스턴스를 생성하는 로직과 생성된 인스턴스를 사용하는 로직을 분리
+- 외부로부터 이미 생성된 인스턴스를 전달 받는다
+- 객체 생성 책임을 객체 내부가 아니라 클라이언트로 옮긴다
+
+##### 가끔은 생성해도 무방하다
+클래스 안에서 객체의 인스턴스를 직접 생성하는 방식이 유용한 경우
+
+해결 방법 - 기본 객체를 생성하는 생성자를 추가하고 이 생성자에서 인스턴스를 인자로 받는 생성자를 체이닝 한다.
+
+```java
+import java.time.Duration;
+
+public class Movie {
+   private DiscountPolicy discountPolicy;
+
+   // 1
+   public Movie(String title, Duration runningTime, Money fee) {
+       this(title, runningTime, fee, new AmountDiscountPolicy(...));
+   }
+   
+   // 2
+   public Movie(String title, Duration runningTime, Money fee, DiscountPolicy discountPolicy) {
+      ...
+      this.discountPolicy = discountPolicy;
+   }
+}
+```
+
+첫번째 생성자의 내부에서 두 번째 생성자를 호출
+
+```java
+public class Movie {
+    public Money calculateMovieFee(Screening screening) {
+        return calculateMovieFee(screening, new AmountDiscountPolicy(...));
+    }
+
+   public Money calculateMovieFee(Screening screening, DiscountPolicy discountPolicy) {
+      return fee.minus(discountPolicy.calculateDiscountAmount(screening));
+   }
+}
+```
+
+메서드를 오버로딩 할 수도 있음
+
+##### 표준 클래스에 대한 의존은 해롭지 않다
+```java
+public abstract class DiscountPolicy {
+    private List<DiscountCondition> conditions = new ArrayList<>();
+}
+```
+ArrayList 의 코드가 수정될 확률은 0에 가깝기 때문에 인스턴스를 직접 생성해도 문제가 되지 않는다.
+
+##### 컨텍스트 확장하기
+```java
+public class Movie {
+      private DiscountPolicy discountPolicy;
+      
+      public Movie(String title, Duration runningTime, Money fee) {
+            this(title, runningTime, fee, null);
+      }
+
+      public Movie(String title, Duration runningTime, Money fee, DiscountPolicy discountPolicy) {
+            // ...
+            this.discountPolicy = discountPolicy;
+      }
+      
+      public Money calculateMovieFee(Screening screening) {
+          if (discountPolicy == null) {
+              return fee;
+          }
+          
+          return fee.minus(discountPolicy.calculateDiscountAmount(screening));
+      }
+}
+```
+
+- 내부에서 discountPolicy 값이 null인지 여부 체크
+- 협력 방식에 어긋나는 예외 케이스가 추가 됨, 코드 내부를 직접 수정하는 것은 버그의 발생 가능성을 높임
+- 해결 방법은 할인 정책이 존재하지 않는다는 사실을 예외 케이스 처리하지 말고, 할인 정책이 존재하지 안흔다는 사실을 할인 정책 한 종류로 간주, 
+  - 할인할 금액을 0원으로 반환하는 클래스를 추가
+
+##### 조합 가능한 행동
+- 유연하고 재사용 가능한 설계가 가진 특징 : 작은 객체들을 다양한 방식으로 연결함으로써 기능을 쉽게 확장할 수 있다.
+- 훌륭한 객체지향 설계 : 객체가 어떻게 하는지를 표현하는 것이 아니라 객체들의 조합을 선언적으로 표현함으로써 객체들이 무엇을 하는지를 표현
+
+시스템에 포함된 객체의 구성을 변경해(절차적인 코드를 작성하기보다는 인스턴스 추가나 제거 또는 조합을 달리해서) 시스템의 작동 방식을 바굴 수 있다.
+시스템을 이런 방식으로 구축하면 방법(how)이 아니라 목적(what)에 집중할 수 있어 시스템의 행위를 변경하기가 더 쉽다.
