@@ -77,4 +77,64 @@ public class Movie {
 - 변경되지 않을 부분을 신중하게 결정하고 올바른 추상화를 주의 깊게 선택했기 때문이라는 사실 기억
 
 #### 생성 사용 분리
+- 아래 코드는 추가하거나 변경하기 위해 기존 코드를 수정하도록 만들기 때문에 개방-폐쇄 원칙을 위반한다.
+```java
+public class Movie {
+  ...
+  private DiscountPolicy discountPolicy;
+  
+  public Movie(String title, Duration runningTime, Money fee) {
+    ...
+    this.discountPolicy = new AmountDiscountPolicy(...);
+  }
+  
+  public Money calculateMovieFee(Screening screening) {
+      return fee.minus(discountPolicy.calculateDiscountAmount(screening));
+  }
+}
+```
+- 결합도가 높아질수록 개방-폐쇄 원칙을 따르는 구조를 설계하기가 어려워진다.
+- 문제는 객체 생성이 아니라, 부적절한 곳에서 객체를 생성한다는 것이 문제다.
+
+문제점
+- 메시지를 전송하지 않고 객체를 생성하기만 한다면 아무런 문제가 없다.
+- 또는 객체를 생성하지 않고 메시지를 전송하기만 했다면 괜찮았을 것이다.
+- 문제는 동일한 클래스 안에서 객체 생성과 사용이라는 두 가지 목적을 가진 코드의 공존이다.
+
+객체에 대한 생성과 사용을 분리해야 한다.
+
+보편적인 방법
+- 객체 생성 책임을 클라이언트로 옮김
+
+##### FACTORY 추가하기
+FACTORY : 생성과 사용을 분리하기 위해 객체 생성에 특화된 객체
+
+```java
+import java.time.Duration;
+
+public class Factory {
+  public Movie createAvatarMovie() {
+    return new Movie("아바타",
+            Duration.ofMinutes(120),
+            Money.wons(10000),
+            new AmountDiscountPolicy(...));
+  }
+}
+
+public class Client {
+    private Factory factory;
+    
+    public Client(Factory factory) {
+        this.factory = factory;
+    }
+    
+    public Money getAvatarFee() {
+        Movie avatar = factory.createAvatarMovie();
+        return avatar.getFee();
+    }
+}
+```
+- Client는 오직 사용과 관련된 책임만 지고 생성과 관련되 어떤 지식도 가지지 않는다.
+
+##### 순수한 가공물에게 책임 할당하기
 
