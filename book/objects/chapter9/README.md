@@ -157,5 +157,61 @@ public class Client {
 - 메서드 주입(method injection) : 메서드 실행 시 인자를 이용한 의존성 해결
 
 ##### 숨겨진 의존성은 나쁘다
+SERVICE LOCATOR 패턴 : 의존성을 해결할 객체들을 보관하는 일종의 저장소, 외부에서 객체에게 의존성을 전달하는 의존성 주입과 달리 객체가 직접 의존성을 해결해줄 것을 요청
 
+> SERVICE LOCATOR 패턴은 서비스를 사용하는 코드로부터 서비스가 누구인지(서비스를 구현한 구체 클래스의 타입이 무엇인지), 어디에 있는지(클래스 인스턴스를 어떻게 얻을지)를 몰라도 되게 해준다.
+
+```java
+public class ServiceLocator {
+    private static ServiceLocator soleInstance = new ServiceLocator();
+    private DiscountPolicy discountPolicy;
+    
+    public static DiscountPolicy discountPolicy() {
+        return soleInstance.discountPolicy;
+    }
+    
+    public static void provide(DiscountPolicy discountPolicy) {
+        soleInstance.discountPolicy = discountPolicy;
+    }
+    
+    private ServiceLocator() {}
+}
+
+public class Movie {
+  ...
+  private DiscountPolicy discountPolicy;
+  
+  public Movie(String title, Duration runningTime, Money fee) {
+      this.title = title;
+      this.runningTime = runningTime;
+      this.fee = fee;
+      this.discountPolicy = ServiceLocator.discountPolicy();
+  }
+}
+```
+
+- AmountDiscountPolicy의 인스턴스에 의존하기를 원한다면 provide에 등록 후 사용한다.
+
+```java
+ServiceLocator.provide(new AmountDiscountPolicy(...));
+Movie avatar = new Movie("아바타", Duration.ofMinutes(120), Money.wons(10000));
+```
+
+- SERVICE LOCATOR 패턴의 큰 단점은 의존성을 감춘다는 것이다.
+- Movie는 DiscountPolicy에 의존하고 있지만 Movie의 퍼블릭 인터페이스 어디에도 의존성에 대한 정보가 표시돼 있지 않다.
+- 의존성은 암시적이며 코드 깊숙한 곳에 숨겨져 있다.
+- 의존성과 관련된 문제가 컴파일타임이 아닌 런타임에 가서야 발견
+- 단위 테스트시 ServiceLocator를 모든 단위 테스트 케이스에서 공유, 단위 테스트는 서로 고립돼야 한다는 기본 원칙 위반
+- 숨겨진 의존성을 이해하기 위해 코드 내부 구현을 이애할 것을 강요한다.
+
+결론
+- 명시적인 의존성이 숨겨진 의존성보다 좋다.
+- 의존성을 구현 내부에 숨기면 숨길수록 코드를 이해하기도, 수정하기도 어려워진다.
+
+#### 의존성 역전 원칙
+##### 추상화와 의존성 역전
+- 상위 수준의 모듈은 하위 수준의 모듈에 의존해서는 안 된다, 두 모두 추상화에 의존해야 한다.
+- 추상화는 구체적인 사항에 의존해서는 안 된다. 구체적인 사항은 추상화에 의존해야 한다.
+
+##### 의존성 역전 원칙과 패키지
 
