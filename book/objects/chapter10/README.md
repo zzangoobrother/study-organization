@@ -158,4 +158,64 @@ public class NightlyDiscountPhone {
 - NightlyDiscountPhone은 밤 10시 기준으로 요금만 다를 뿐 Phone과 거의 유사하다.
 - 요구사항을 아주 잛은 시간 안에 구현할 수 있다.
 
+##### 중복 코드 수정하기
+- 새로운 요구사항
+  - 통화 요금에 부과할 세금 계산 추가
+  - Phone, NightlyDiscountPhone 모두 구현
+
+```java
+public class Phone {
+    ...
+    private double taxRate;
+
+    public Phone(Money amount, Duration seconds, double taxRate) {
+        this.amount = amount;
+        this.seconds = seconds;
+        this.taxRate = taxRate;
+    }
+
+    public Money calculateFee() {
+        Money result = Money.ZERO;
+
+        for (Call call : calls) {
+            result = result.plus(amount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+        }
+
+        return result.plus(result.times(taxRate));
+    }
+}
+
+public class NightlyDiscountPhone {
+  ...
+  private double taxRate;
+  
+  public NightlyDiscountPhone(Money nightlyAmount, Money regularAmount, Duration seconds, double taxRate) {
+    this.nightlyAmount = nightlyAmount;
+    this.regularAmount = regularAmount;
+    this.seconds = seconds;
+    this.taxRate = taxRate;
+  }
+
+  public Money calculateFee() {
+    Money result = Money.ZERO;
+
+    for (Call call : calls) {
+      if (call.getFrom().getHour() >= LATE_NIGHT_HOUR) {
+        result = result.plus(nightlyAmount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+      } else {
+        result = result.plus(regularAmount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+      }
+    }
+
+    return result.plus(result.times(taxRate));
+  }
+}
+```
+
+- 위 예제는 중복 코드가 가지는 단점을 보여준다. 
+- Phone은 수정했지만 NightlyDiscountPhone은 수정하지 않은 채 배포했다면 장애가 발생한다.
+- 더 큰 문제는 중복 코드를 서로 다르게 수정하기 쉽다.
+- 중복 코드의 양이 많아질수록 버그의 수는 증가하며, 변경하는 속도는 점점 더 느려진다.
+
+##### 타입 코드 사용하기
 
