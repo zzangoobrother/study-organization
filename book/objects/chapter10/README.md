@@ -218,4 +218,205 @@ public class NightlyDiscountPhone {
 - 중복 코드의 양이 많아질수록 버그의 수는 증가하며, 변경하는 속도는 점점 더 느려진다.
 
 ##### 타입 코드 사용하기
+- 두 클래스 사이의 중복 코드를 제거하는 한 가지 방법은 하나로 합치기
+- 타입 코드를 사용하여 로직을 분기시킨다
+- 문제는 낮은 응집도와 높은 결합도
+
+```java
+public class Phone {
+    private static final int LATE_NIGHT_HOUR = 22;
+    enum PhoneType {
+        REGULAR,
+        NIGHTLY;
+    }
+
+    private PhoneType type;
+    private Money amount;
+    private Money regularAmount;
+    private Money nightlyAmount;
+    private Duration seconds;
+    private List<Call> calls = new ArrayList<>();
+
+    public Phone(Money amount, Duration seconds) {
+        this(PhoneType.REGULAR, amount, Money.ZERO, Money.ZERO, seconds);
+    }
+
+    public Phone(Money regularAmount, Money nightlyAmount, Duration seconds) {
+        this(PhoneType.NIGHTLY, Money.ZERO, nightlyAmount, regularAmount, seconds);
+    }
+
+    public Phone(PhoneType type, Money amount, Money nightlyAmount, Money regularAmount, Duration seconds) {
+        this.type = type;
+        this.amount = amount;
+        this.regularAmount = regularAmount;
+        this.nightlyAmount = nightlyAmount;
+        this.seconds = seconds;
+    }
+
+    public Money calculateFee() {
+        Money result = Money.ZERO;
+
+        for (Call call : calls) {
+            if (type == PhoneType.REGULAR) {
+                result  = result.plus(amount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+            } else {
+                if (call.getFrom().getHour() >= LATE_NIGHT_HOUR) {
+                    result = result.plus(nightlyAmount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+                } else {
+                    result = result.plus(regularAmount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+                }
+            }
+        }
+        
+        return result;
+    }
+}
+```
+
+- 객체지향 프로그래밍 언어는 타입 코드를 사용하지 않고도 중복 코드를 관리할 수 있는 효과적인 방법을 제공, 바로 상속이다
+
+#### 상속을 이용해서 중복 코드 제거하기
+- NightlyDiscountPhone 클래스가 Phone 클래스 상속, 코드를 중복시키지 않고 대부분 재사용
+```java
+public class Phone {
+    private Money amount;
+    private Duration seconds;
+    private List<Call> calls = new ArrayList<>();
+
+    public Phone(Money amount, Duration seconds) {
+        this.amount = amount;
+        this.seconds = seconds;
+    }
+
+    public void call(Call call) {
+        calls.add(call);
+    }
+
+    public List<Call> getCalls() {
+        return calls;
+    }
+
+    public Money getAmount() {
+        return amount;
+    }
+
+    public Duration getSeconds() {
+        return seconds;
+    }
+
+    public Money calculateFee() {
+        Money result = Money.ZERO;
+
+        for (Call call : calls) {
+            result = result.plus(amount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+        }
+
+        return result;
+    }
+}
+
+public class NightlyDiscountPhone extends Phone {
+  private static final int LATE_NIGHT_HOUR = 22;
+
+  private Money nightlyAmount;
+
+  public NightlyDiscountPhone(Money nightlyAmount, Money regularAmount, Duration seconds) {
+    super(regularAmount, seconds);
+    this.nightlyAmount = nightlyAmount;
+  }
+
+  public Money calculateFee() {
+    Money result = super.calculateFee();
+
+    Money nightlyFee = Money.ZERO;
+    for (Call call : getCalls()) {
+      if (call.getFrom().getHour() >= LATE_NIGHT_HOUR) {
+        nightlyFee = nightlyFee.plus(getAmount().minus(nightlyAmount).times(call.getDuration().getSeconds() / getSeconds().getSeconds()));
+      }
+    }
+
+    return result.minus(nightlyFee);
+  }
+}
+```
+
+#### 강하게 결합된 Phone과 NightlyDiscountPhone
+- 위 예제에서 세금 부과하는 요구사항이 추가된다면
+
+```java
+public class Phone {
+    private Money amount;
+    private Duration seconds;
+    private double taxRate;
+    private List<Call> calls = new ArrayList<>();
+
+    public Phone(Money amount, Duration seconds, double taxRate) {
+        this.amount = amount;
+        this.seconds = seconds;
+        this.taxRate = taxRate;
+    }
+
+    public void call(Call call) {
+        calls.add(call);
+    }
+
+    public List<Call> getCalls() {
+        return calls;
+    }
+
+    public Money getAmount() {
+        return amount;
+    }
+
+    public Duration getSeconds() {
+        return seconds;
+    }
+
+    public double getTaxRate() {
+        return taxRate;
+    }
+
+    public Money calculateFee() {
+        Money result = Money.ZERO;
+
+        for (Call call : calls) {
+            result = result.plus(amount.times(call.getDuration().getSeconds() / seconds.getSeconds()));
+        }
+
+        return result.plus(result.times(taxRate));
+    }
+}
+
+public class NightlyDiscountPhone extends Phone {
+  private static final int LATE_NIGHT_HOUR = 22;
+
+  private Money nightlyAmount;
+
+  public NightlyDiscountPhone(Money nightlyAmount, Money regularAmount, Duration seconds, double taxRate) {
+    super(regularAmount, seconds, taxRate);
+    this.nightlyAmount = nightlyAmount;
+  }
+
+  public Money calculateFee() {
+    Money result = super.calculateFee();
+
+    Money nightlyFee = Money.ZERO;
+    for (Call call : getCalls()) {
+      if (call.getFrom().getHour() >= LATE_NIGHT_HOUR) {
+        nightlyFee = nightlyFee.plus(getAmount().minus(nightlyAmount).times(call.getDuration().getSeconds() / getSeconds().getSeconds()));
+      }
+    }
+
+    return result.minus(nightlyFee.plus(nightlyAmount.times(getTaxRate())));
+  }
+}
+```
+
+- 세율을 인스턴스 변수로 포함하고, calculateFee 메서드에서 세금을 부과한다.
+- 세금을 부과하는 로직을 추가하기 위해 Phone과 NightlyDiscountPhone에 로직을 추가한다.
+
+> 자식 클래스의 메서드 안에서 super 참조를 이용해 부목 클래스의 메서드를 직접 호출할 경우
+> 두 클래스는 강하게 결합된다. super 호출을 제거할 수 있는 방법을 찾아 결합도를 제거하라.
+
+### 취약한 기반 클래스 문제
 
