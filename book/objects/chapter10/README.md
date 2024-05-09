@@ -419,4 +419,47 @@ public class NightlyDiscountPhone extends Phone {
 > 두 클래스는 강하게 결합된다. super 호출을 제거할 수 있는 방법을 찾아 결합도를 제거하라.
 
 ### 취약한 기반 클래스 문제
+- 상속은 자식 클래스와 부모 클래스의 결합도를 높인다.
+- 부모 클래스의 변경에 의해 자식 클래스가 영향을 받는 현상을 '취약한 기반 클래스 문제' 라고 한다.
+
+#### 불필요한 인터페이스 상속 문제
+1. Stack
+- Stack은 Vector의 자식 클래스로 Vector의 퍼블릭 인터페이스를 사용할 수 있다.
+
+```java
+import java.util.Stack;
+
+Stack<String> stack = new Stack<>();
+stack.push("1st");
+stack.push("2nd");
+stack.push("3rd");
+
+stack.add(0, "4th");
+
+assertEquals("4th", stack.pop()); // 에러
+```
+
+2. Properties
+- Properties는 HashTable의 자식 클래스이다.
+- HashTable은 제네릭이 도입되기 전에 만들어졌기에 컴파일러가 키와 값의 타입이 String인지 체크할 수 없다.
+
+```java
+import java.util.Properties;
+
+Properties properties = new Properties();
+properties.setProperty("Bjarne Stroustrup", "C++");
+properties.setProperty("James Gosling", "JAVA");
+
+properties.put("Dennis Ritchie", 67);
+
+assertEquals("C", properties.getProperty("Dennis Ritchie")); // 에러
+```
+
+- getProperty()는 반환값이 String이 아니면 null을 반환한다.
+
+#### 메소드 오버라이딩의 오작용 문제
+- 자식 클래스가 부모 클래스의 메서드를 오버라이딩할 경우 부모 클래스가 자신의 메서드를 사용하는 방법에 자식 클래스가 결합될 수 있다.
+- 상속을 위해 클래스를 설계하고 문서화해야 하며, 그렇지 않은 경우 상속을 금지시켜야 한다고 주장
+
+#### 부모 클래스와 자식 클래스의 동시 수정 문제
 
