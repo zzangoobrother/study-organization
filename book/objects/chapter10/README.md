@@ -462,4 +462,168 @@ assertEquals("C", properties.getProperty("Dennis Ritchie")); // 에러
 - 상속을 위해 클래스를 설계하고 문서화해야 하며, 그렇지 않은 경우 상속을 금지시켜야 한다고 주장
 
 #### 부모 클래스와 자식 클래스의 동시 수정 문제
+- 결합도란, 다른 대상에 대해 알고 있는 지식의 양
+- 상속은 부모 클래스의 구현을 재사용한다는 기본 젠제를 따르기에 자식 클래스가 부모 클래스의 내부에 대해 알도록 강요
+- 따라서 함께 수정해야 하는 상황이 빈번하게 발생
+
+### Phone 다시 살펴보기
+#### 추상화에 의존하자
+- NightlyDiscountPhone의 문제점은 Phone에 강하게 결합되어 있다는 것이다.
+- 부모 클래스와 자식 클래스 모두 추상화에 의존하도록 하자
+- 상속 도입시 두 가지 원칙
+  - 두 메서드가 유사하게 보인다면 차이점을 메서드로 추출하라, 메서드 추출을 통해 두 메서드를 동일한 형태로 보이도록 만들 수 있다.
+  - 부모 클래스의 코드를 하위로 내리지 말고 자식 클래스의 코드를 상위로 올려라, 부모 클래스의 구체적인 메서드를 자식 클래스로 내리는 것보다 자식 클래스의 추상적인 메서드를 부모 클래스로 올리는 것이 재사용성과 응집도 측면에서 더 뛰어난 결과를 얻을 수 잇다.
+
+#### 차이를 메서드로 추출하라
+```java
+public class Phone {
+    private Money amount;
+    private Duration seconds;
+    private List<Call> calls = new ArrayList<>();
+
+    public Phone(Money amount, Duration seconds) {
+        this.amount = amount;
+        this.seconds = seconds;
+    }
+
+    public void call(Call call) {
+        calls.add(call);
+    }
+
+    public List<Call> getCalls() {
+        return calls;
+    }
+
+    public Money getAmount() {
+        return amount;
+    }
+
+    public Duration getSeconds() {
+        return seconds;
+    }
+
+    public Money calculateFee() {
+        Money result = Money.ZERO;
+
+        for (Call call : calls) {
+            result = result.plus(calculateCallFee(call));
+        }
+
+        return result;
+    }
+
+    private Money calculateCallFee(Call call) {
+        return amount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+    }
+}
+
+public class NightlyDiscountPhone {
+  private static final int LATE_NIGHT_HOUR = 22;
+
+  private Money nightlyAmount;
+  private Money regularAmount;
+  private Duration seconds;
+  private List<Call> calls = new ArrayList<>();
+
+  public NightlyDiscountPhone(Money amount, Duration seconds, Money nightlyAmount, Money regularAmount, Duration seconds1) {
+    this.nightlyAmount = nightlyAmount;
+    this.regularAmount = regularAmount;
+    this.seconds = seconds1;
+  }
+
+  public Money calculateFee() {
+    Money result = Money.ZERO;
+
+    for (Call call : calls) {
+      result = result.plus(calculateCallFee(call));
+    }
+
+    return result;
+  }
+
+  private Money calculateCallFee(Call call) {
+    if (call.getFrom().getHour() >= LATE_NIGHT_HOUR) {
+      return nightlyAmount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+    } else {
+      return regularAmount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+    }
+  }
+}
+```
+
+#### 중복 코드를 부모 클래스로 올려라
+```java
+public abstract class AbstractPhone {
+
+    private List<Call> calls = new ArrayList<>();
+
+    public void call(Call call) {
+        calls.add(call);
+    }
+
+    public List<Call> getCalls() {
+        return calls;
+    }
+
+    public Money calculateFee() {
+        Money result = Money.ZERO;
+
+        for (Call call : calls) {
+            result = result.plus(calculateCallFee(call));
+        }
+
+        return result;
+    }
+
+    protected abstract Money calculateCallFee(Call call);
+}
+
+public class Phone extends AbstractPhone {
+  private Money amount;
+  private Duration seconds;
+
+  public Phone(Money amount, Duration seconds) {
+    this.amount = amount;
+    this.seconds = seconds;
+  }
+
+  public Money getAmount() {
+    return amount;
+  }
+
+  public Duration getSeconds() {
+    return seconds;
+  }
+
+  @Override
+  protected Money calculateCallFee(Call call) {
+    return amount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+  }
+}
+
+public class NightlyDiscountPhone extends AbstractPhone {
+  private static final int LATE_NIGHT_HOUR = 22;
+
+  private Money nightlyAmount;
+  private Money regularAmount;
+  private Duration seconds;
+
+  public NightlyDiscountPhone(Money amount, Duration seconds, Money nightlyAmount, Money regularAmount, Duration seconds1) {
+    this.nightlyAmount = nightlyAmount;
+    this.regularAmount = regularAmount;
+    this.seconds = seconds1;
+  }
+
+  @Override
+  protected Money calculateCallFee(Call call) {
+    if (call.getFrom().getHour() >= LATE_NIGHT_HOUR) {
+      return nightlyAmount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+    }
+
+    return regularAmount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+  }
+}
+```
+
+#### 추상화가 핵심이다
 
