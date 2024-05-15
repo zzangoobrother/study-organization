@@ -626,4 +626,115 @@ public class NightlyDiscountPhone extends AbstractPhone {
 ```
 
 #### 추상화가 핵심이다
+#### 의도를 드러내는 이름 선택하기
+- 클래스 이름을 명시적으로 전달하도록 수정
+- AbstractPhone -> Phone, Phone -> RegularPhone
 
+```java
+public abstract class Phone {
+    
+}
+
+public class RegularPhone extends Phone {
+    
+}
+
+public class NightlyDiscountPhone extends Phone {
+    
+}
+```
+
+#### 세금 추가하기
+- 세금을 추가하도록 요구사항 변경, 세금은 모든 요금제에 공통으로 적용
+
+```java
+public abstract class Phone {
+
+    private double taxRate;
+    private List<Call> calls = new ArrayList<>();
+
+    public Phone(double taxRate) {
+        this.taxRate = taxRate;
+    }
+
+    public void call(Call call) {
+        calls.add(call);
+    }
+
+    public List<Call> getCalls() {
+        return calls;
+    }
+
+    public Money calculateFee() {
+        Money result = Money.ZERO;
+
+        for (Call call : calls) {
+            result = result.plus(calculateCallFee(call));
+        }
+
+        return result.plus(result.times(taxRate));
+    }
+
+    protected abstract Money calculateCallFee(Call call);
+}
+
+public class RegularPhone extends Phone {
+  private Money amount;
+  private Duration seconds;
+
+  public RegularPhone(Money amount, Duration seconds, double taxRate) {
+    super(taxRate);
+    this.amount = amount;
+    this.seconds = seconds;
+  }
+
+  public Money getAmount() {
+    return amount;
+  }
+
+  public Duration getSeconds() {
+    return seconds;
+  }
+
+  @Override
+  protected Money calculateCallFee(Call call) {
+    return amount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+  }
+}
+
+public class NightlyDiscountPhone extends Phone {
+  private static final int LATE_NIGHT_HOUR = 22;
+
+  private Money nightlyAmount;
+  private Money regularAmount;
+  private Duration seconds;
+
+  public NightlyDiscountPhone(Money nightlyAmount, Money regularAmount, Duration seconds, double taxRate) {
+    super(taxRate);
+    this.nightlyAmount = nightlyAmount;
+    this.regularAmount = regularAmount;
+    this.seconds = seconds;
+  }
+
+  @Override
+  protected Money calculateCallFee(Call call) {
+    if (call.getFrom().getHour() >= LATE_NIGHT_HOUR) {
+      return nightlyAmount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+    }
+
+    return regularAmount.times(call.getDuration().getSeconds() / seconds.getSeconds());
+  }
+}
+```
+
+- 자식 클래스는 자신의 인스턴스를 생성할 때 부목 클래스에 정의도니 인스턴스 변수 초기화, 따라서 부모 클래스에 추가된 인스턴스 변수는 자식 클래스 초기화 로직에 영향
+- 결과적으로 책임을 아무리 잘 분리하더라도 인스턴스 변수의 추가는 종종 상속 계층 전반에 변경을 유발
+- 인스턴스 초기화 로직을 변경하는 것이 두 클래스에 동일한 세금 계산 코드를 중복시키는 것보다는 현명한 선택
+
+### 차이에 의한 프로그래밍
+- 상속이 강력한 이유는 익숙한 개념을 이용해서 새로운 개념을 쉽고 빠르게 추가 가능
+- 기존 크드와 다른 부분만을 추가함으로써 애플리케이션의 기능을 확장하는 방법을 '차이에 의한 프로그래밍(programming by difference)' 라고 한다.
+- '차이에 의한 프로그래밍'의 목표는 중복 코드를 제거하고 코드를 재사용하는 것
+
+> 상속은 강력한 도구다. 상속이 코드 재사용이라는 측면에서 매우 강력한 도구인 것은 사실이지만 잘못 사용할 경우에 돌아오는 피해 역시 크다.
+> 상속의 오용과 남용은 애플리케이션을 이해하고 확장하기 어렵게 만든다. 정말로 필요한 경우에만 사용하라.
